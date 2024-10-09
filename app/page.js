@@ -12,7 +12,6 @@ export default function Home() {
     lng: '',
   });
 
-  // UseEffect to get user's current location if they allow it
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -39,16 +38,14 @@ export default function Home() {
   };
 
   const fetchWeatherData = async (lat, long) => {
-    const key = '2319db5d5fab225d5c9d6cd5a01b577c';
+    const key = '73f54136beeb4b3995d81105240910';
     if (lat && long) {
       try {
-        await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${long}&appid=${key}&units=metric`
-        )
-          .then((res) => res.json())
-          .then((result) => {
-            setWeatherData(result);
-          });
+        const response = await fetch(
+          `https://api.weatherapi.com/v1/forecast.json?key=${key}&q=${lat},${long}&days=7`
+        );
+        const result = await response.json();
+        setWeatherData(result);
       } catch (error) {
         console.error('Error fetching weather data:', error);
       }
@@ -59,6 +56,12 @@ export default function Home() {
     if (selectedPlace.lat && selectedPlace.lng) {
       fetchWeatherData(selectedPlace.lat, selectedPlace.lng);
     }
+  };
+
+  const formatDate = (dateString, index) => {
+    const date = new Date(dateString);
+    const options = { weekday: 'long', month: 'long', day: 'numeric' };
+    return index === 0 ? 'Today' : index === 1 ? 'Tomorrow' : date.toLocaleDateString(undefined, options);
   };
 
   return (
@@ -80,23 +83,41 @@ export default function Home() {
           >
             Check
           </button>
+
+          {/* Current Location Heading */}
+          {selectedPlace.address && (
+            <h2 className="text-xl font-semibold mt-4 text-gray-700">
+              Current Location: {selectedPlace.address}
+            </h2>
+          )}
         </div>
       </div>
-      {
-        weatherData && (
-          <div className="mt-6 flex justify-center">
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-[20px] shadow-xl p-6 w-[90%] sm:w-[50%] transition-transform transform hover:scale-105">
-              <h2 className="text-2xl font-bold text-blue-700 mb-4">{weatherData.name}</h2>
+      {weatherData && (
+        <div className="mt-6 flex flex-col items-center">
+          {weatherData.forecast.forecastday.map((day, index) => (
+            <div key={day.date} className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-[20px] shadow-xl p-4 w-[90%] sm:w-[50%] mb-4 transition-transform transform hover:scale-105">
+              <h2 className="text-2xl font-bold text-blue-700 mb-2">{formatDate(day.date, index)}</h2>
               <div className="text-left">
-                <p className="text-lg text-gray-700 mb-2"><strong>Temperature:</strong> {weatherData.main.temp}°C</p>
-                <p className="text-lg text-gray-700 mb-2"><strong>Weather:</strong> {weatherData.weather[0].description}</p>
-                <p className="text-lg text-gray-700 mb-2"><strong>Humidity:</strong> {weatherData.main.humidity}%</p>
-                <p className="text-lg text-gray-700"><strong>Wind Speed:</strong> {weatherData.wind.speed} m/s</p>
+                <p className="text-lg text-gray-700 mb-2">
+                  <strong>Max Temp:</strong> {day.day.maxtemp_c}°C
+                </p>
+                <p className="text-lg text-gray-700 mb-2">
+                  <strong>Min Temp:</strong> {day.day.mintemp_c}°C
+                </p>
+                <p className="text-lg text-gray-700 mb-2">
+                  <strong>Weather:</strong> {day.day.condition.text}
+                </p>
+                <p className="text-lg text-gray-700 mb-2">
+                  <strong>Humidity:</strong> {day.day.avghumidity}%
+                </p>
+                <p className="text-lg text-gray-700">
+                  <strong>Wind Speed:</strong> {day.day.maxwind_kph} kph
+                </p>
               </div>
             </div>
-          </div>
-        )
-      }
+          ))}
+        </div>
+      )}
     </>
   );
 }
